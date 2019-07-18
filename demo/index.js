@@ -1,4 +1,6 @@
 import { OpenSheetMusicDisplay } from '../src/OpenSheetMusicDisplay/OpenSheetMusicDisplay';
+import { CrewSheetMusicDisplay } from "../src/Crew/CrewSheetMusicDisplay";
+import { EngravingRules } from '../src';
 
 /*jslint browser:true */
 (function () {
@@ -148,15 +150,24 @@ import { OpenSheetMusicDisplay } from '../src/OpenSheetMusicDisplay/OpenSheetMus
             }
         }
 
-        // Create OSMD object and canvas
+        // EngravingRules by crew 
+        EngravingRules.Rules.StaffDistance = 4 * 1.8;
+        EngravingRules.Rules.StaffHeight = 4 * 1.8;
+        EngravingRules.Rules.SystemDistance = 20;
+
+        // Create OSMD object and canvas        
         openSheetMusicDisplay = new OpenSheetMusicDisplay(canvas, {
-            autoResize: true,
+            autoResize: false,
             backend: backendSelect.value,
-            disableCursor: false,
+            disableCursor: true,
+            followCursor: false,
             drawingParameters: "default", // try compact (instead of default)
             drawPartNames: true, // try false
-            // drawTitle: false,
-            // drawSubtitle: false,
+            drawTitle: false,
+            drawSubtitle: true,
+            drawComposer: false,
+            drawCredits: false,
+            drawLyricist: false,
             //drawFromMeasureNumber: 4,
             //drawUpToMeasureNumber: 8,
             drawFingerings: true,
@@ -177,18 +188,18 @@ import { OpenSheetMusicDisplay } from '../src/OpenSheetMusicDisplay/OpenSheetMus
                 //groups: [[3,4], [1,1]],
                 maintain_stem_directions: false
             },
-
             // tupletsBracketed: true, // creates brackets for all tuplets except triplets, even when not set by xml
             // tripletsBracketed: true,
             // tupletsRatioed: true, // unconventional; renders ratios for tuplets (3:2 instead of 3 for triplets)
         });
         openSheetMusicDisplay.setLogLevel('info');
-        document.body.appendChild(canvas);
-
+        var container = document.getElementById('vfContainer');
+        container.appendChild(canvas);
+        
         window.addEventListener("keydown", function(e) {
             var event = window.event ? window.event : e;
             if (event.keyCode === 39) {
-                openSheetMusicDisplay.cursor.next();
+                //openSheetMusicDisplay.cursor.next();
             }
         });
         nextCursorBtn.addEventListener("click", function() {
@@ -259,13 +270,13 @@ import { OpenSheetMusicDisplay } from '../src/OpenSheetMusicDisplay/OpenSheetMus
             //maxMeasureToDraw = 1;
             console.log("drawing measures in the range: [" + minMeasureToDraw + "," + maxMeasureToDraw + "]");
             openSheetMusicDisplay.setOptions({
-                drawFromMeasureNumber: minMeasureToDraw,
-                drawUpToMeasureNumber: maxMeasureToDraw
+                //drawFromMeasureNumber: minMeasureToDraw,
+                //drawUpToMeasureNumber: maxMeasureToDraw
             });
         } else { // reset for other samples
             openSheetMusicDisplay.setOptions({
-                drawFromMeasureNumber: 0,
-                drawUpToMeasureNumber: Number.MAX_VALUE
+                //drawFromMeasureNumber: 0,
+                //drawUpToMeasureNumber: Number.MAX_VALUE
             });
         }
 
@@ -288,7 +299,7 @@ import { OpenSheetMusicDisplay } from '../src/OpenSheetMusicDisplay/OpenSheetMus
             function() {
                 // This gives you access to the osmd object in the console. Do not use in productive code
                 window.osmd = openSheetMusicDisplay;
-                return openSheetMusicDisplay.render();
+                return renderPages();
             },
             function(e) {
                 errorLoadingOrRenderingSheet(e, "rendering");
@@ -330,7 +341,7 @@ import { OpenSheetMusicDisplay } from '../src/OpenSheetMusicDisplay/OpenSheetMus
         disable();
         window.setTimeout(function(){
             openSheetMusicDisplay.zoom = zoom;
-            openSheetMusicDisplay.render();
+            renderPages();
             enable();
         }, 0);
     }
@@ -338,13 +349,24 @@ import { OpenSheetMusicDisplay } from '../src/OpenSheetMusicDisplay/OpenSheetMus
     function rerender() {
         disable();
         window.setTimeout(function(){
-            if (openSheetMusicDisplay.IsReadyToRender()) {
-                openSheetMusicDisplay.render();
+            if (openSheetMusicDisplay.IsReadyToRender()) {                
+                renderPages();
             } else {
                 selectSampleOnChange(); // reload sample e.g. after osmd.clear()
             }
             enable();
         }, 0);
+    }
+
+    var csmd = null; 
+    function renderPages() {
+        if (!csmd) {
+            csmd = new CrewSheetMusicDisplay(openSheetMusicDisplay, document.getElementById('vfContainer'), true);
+            window.csmd = csmd;
+        }
+
+        //osmd.render();
+        csmd.render();
     }
 
     function error(errString) {
