@@ -168,21 +168,21 @@ export class MusicSystemBuilder {
             this.checkAndCreateExtraInstructionMeasure(measures);
         }
         this.stretchMusicSystem(isPartEndingSystem);
-        if (this.currentPageHeight + this.currentSystemParams.currentSystem.PositionAndShape.Size.height + this.rules.SystemDistance <= this.rules.PageHeight) {
-            this.currentPageHeight += this.currentSystemParams.currentSystem.PositionAndShape.Size.height + this.rules.SystemDistance;
-            if (
-                this.currentPageHeight + this.currentSystemParams.currentSystem.PositionAndShape.Size.height
-                + this.rules.SystemDistance >= this.rules.PageHeight
-            ) {
+        const hasMoreMeasures: boolean = this.measureListIndex < this.measureList.length;
+        let shouldCreateNewPage: boolean = false;
+        const heightIncrement: number = this.currentSystemParams.currentSystem.PositionAndShape.Size.height + this.rules.SystemDistance;
+        if (this.currentPageHeight + heightIncrement <= this.rules.PageHeight) {
+            this.currentPageHeight += heightIncrement;
+            shouldCreateNewPage = this.currentPageHeight + heightIncrement >= this.rules.PageHeight;
+        } else {
+            shouldCreateNewPage = true;
+        }
+        this.currentSystemParams = new SystemBuildParameters();
+        if (hasMoreMeasures) {
+            if (shouldCreateNewPage) {
                 this.currentMusicPage = this.createMusicPage();
                 this.currentPageHeight = this.rules.PageTopMargin + this.rules.TitleTopDistance;
             }
-        } else {
-            this.currentMusicPage = this.createMusicPage();
-            this.currentPageHeight = this.rules.PageTopMargin + this.rules.TitleTopDistance;
-        }
-        this.currentSystemParams = new SystemBuildParameters();
-        if (this.measureListIndex < this.measureList.length) {
             this.currentSystemParams.currentSystem = this.initMusicSystem();
             this.layoutSystemStaves();
             this.addSystemLabels();
