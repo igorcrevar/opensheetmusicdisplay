@@ -12,24 +12,13 @@ export class CrewSheetMusicDisplay {
     private parent: OpenSheetMusicDisplay;
     private container: HTMLElement;
     private drawersData: DrawersDataType[];
+    private currentPageIndex: number;
+    private pagesYPositionsFixes: number[];
 
-    constructor(parent: OpenSheetMusicDisplay, container: HTMLElement, autoResizeEnabled: boolean) {
+    constructor(parent: OpenSheetMusicDisplay, container: HTMLElement) {
         this.parent = parent;
         this.container = container;
-        // auto resize
-        if (autoResizeEnabled) {
-            this.parent.AutoResizeEnabled = true;
-            this.parent.handleResize(
-                () => {
-                    // empty
-                },
-                () => {
-                    if (this.parent.IsReadyToRender()) {
-                        this.render();
-                    }
-                }
-            );
-        }
+        this.currentPageIndex = 0;
     }
 
     public render(zoom?: number): void {
@@ -72,7 +61,8 @@ export class CrewSheetMusicDisplay {
         this.fixAbsolutePositioning(width);
     }
 
-    public renderPagePreview(currentPageIndex: number, nextPageIndex: number): boolean {
+    public renderPagePreview(nextPageIndex: number, currentPageIndex?: number): boolean {
+        currentPageIndex = currentPageIndex || this.currentPageIndex;
         let currentElement: HTMLElement;
         let nextElement: HTMLElement;
         let pagePreviewNode: HTMLElement;
@@ -96,10 +86,7 @@ export class CrewSheetMusicDisplay {
                 pagePreviewNode = document.createElement("div");
                 pagePreviewNode.className = "vfPage vfPagePreview";
                 this.container.appendChild(pagePreviewNode);
-            } else {
-                pagePreviewNode.innerHTML = "";
             }
-
             const width: number = Math.floor(parseInt(currentElement.style.width, 10) / 2);
             pagePreviewNode.style.position = "absolute";
             pagePreviewNode.style.display = "block";
@@ -122,25 +109,41 @@ export class CrewSheetMusicDisplay {
         }
     }
 
+    public getZoom(): number {
+        return this.parent.zoom;
+    }
+
     public getNumberOfPages(): number {
         const graphic: GraphicalMusicSheet = this.parent.getGraphic();
         return !!graphic ? graphic.MusicPages.length : 0;
+    }
+
+    public getCurrentPageIndex(): number {
+        return this.currentPageIndex;
     }
 
     public getGraphic(): GraphicalMusicSheet {
         return this.parent.getGraphic();
     }
 
-    public jumpToPage(pageIndex: number): boolean {
-        const nextPageId: string = "vfPage_" + pageIndex;
-        for (let i: number = 0; i < this.container.children.length; ++i) {
-            const child: HTMLElement = <HTMLElement>this.container.children[i];
-            const id: string = child.getAttribute("id");
-            if (id === nextPageId) {
-                this.container.scrollLeft = parseInt(child.style.left, 10);
-                return true;
+    public getYFixForPage(pageIndex?: number): number {
+        return this.pagesYPositionsFixes[pageIndex || this.currentPageIndex];
+    }
+
+    public jumpToPage(pageIndex: number, force?: boolean): boolean {
+        if (this.currentPageIndex !== pageIndex || force) {
+            this.currentPageIndex = pageIndex;
+            const nextPageId: string = "vfPage_" + pageIndex;
+            for (let i: number = 0; i < this.container.children.length; ++i) {
+                const child: HTMLElement = <HTMLElement>this.container.children[i];
+                const id: string = child.getAttribute("id");
+                if (id === nextPageId) {
+                    this.container.scrollLeft = parseInt(child.style.left, 10);
+                    return true;
+                }
             }
         }
+
         return false;
     }
 
@@ -185,6 +188,7 @@ export class CrewSheetMusicDisplay {
             (currentMax, page) => Math.max(currentMax, page.MusicSystems[0].StaffLines[0].PositionAndShape.AbsolutePosition.y),
             -1);
 
+        this.pagesYPositionsFixes = [];
         for (let i: number = 0; i <  this.drawersData.length; ++i) {
             const data: DrawersDataType = this.drawersData[i];
             const page: GraphicalMusicPage = pages[i];
@@ -194,8 +198,10 @@ export class CrewSheetMusicDisplay {
             data.canvas.style.position = "absolute";
             data.canvas.style.left = (i * width) + "px";
             const topOffset: number = topUpper - page.MusicSystems[0].StaffLines[0].PositionAndShape.AbsolutePosition.y;
-            data.canvas.style.top = (topOffset * 10 * this.parent.zoom) + "px";
+            const topPixels: number = topOffset * 10 * this.parent.zoom;
+            data.canvas.style.top = topPixels + "px";
             data.canvas.style.width = width + "px";
+            this.pagesYPositionsFixes.push(topPixels);
         }
     }
 }

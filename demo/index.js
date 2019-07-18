@@ -1,5 +1,7 @@
 import { OpenSheetMusicDisplay } from '../src/OpenSheetMusicDisplay/OpenSheetMusicDisplay';
 import { CrewSheetMusicDisplay } from "../src/Crew/CrewSheetMusicDisplay";
+import { CrewCursorSystemBuilder } from "../src/Crew/CrewCursorSystemBuilder";
+import { CrewCursor } from "../src/Crew/CrewCursor";
 import { EngravingRules } from '../src';
 
 /*jslint browser:true */
@@ -150,12 +152,12 @@ import { EngravingRules } from '../src';
             }
         }
 
-        // EngravingRules by crew 
+        // EngravingRules by crew
         EngravingRules.Rules.StaffDistance = 4 * 1.8;
         EngravingRules.Rules.StaffHeight = 4 * 1.8;
         EngravingRules.Rules.SystemDistance = 20;
 
-        // Create OSMD object and canvas        
+        // Create OSMD object and canvas
         openSheetMusicDisplay = new OpenSheetMusicDisplay(canvas, {
             autoResize: false,
             backend: backendSelect.value,
@@ -195,7 +197,7 @@ import { EngravingRules } from '../src';
         openSheetMusicDisplay.setLogLevel('info');
         var container = document.getElementById('vfContainer');
         container.appendChild(canvas);
-        
+
         window.addEventListener("keydown", function(e) {
             var event = window.event ? window.event : e;
             if (event.keyCode === 39) {
@@ -349,7 +351,7 @@ import { EngravingRules } from '../src';
     function rerender() {
         disable();
         window.setTimeout(function(){
-            if (openSheetMusicDisplay.IsReadyToRender()) {                
+            if (openSheetMusicDisplay.IsReadyToRender()) {
                 renderPages();
             } else {
                 selectSampleOnChange(); // reload sample e.g. after osmd.clear()
@@ -358,15 +360,31 @@ import { EngravingRules } from '../src';
         }, 0);
     }
 
-    var csmd = null; 
+    var csmd = null;
     function renderPages() {
+        var container = document.getElementById('vfContainer');
         if (!csmd) {
-            csmd = new CrewSheetMusicDisplay(openSheetMusicDisplay, document.getElementById('vfContainer'), true);
+            csmd = new CrewSheetMusicDisplay(openSheetMusicDisplay, container);
+             // auto resize
+            osmd.AutoResizeEnabled = true;
+            osmd.handleResize(
+                () => {
+                    // empty
+                },
+                () => {
+                    if (osmd.IsReadyToRender()) {
+                        renderPages();
+                    }
+                }
+            );
             window.csmd = csmd;
         }
 
         //osmd.render();
         csmd.render();
+        const c = new CrewCursorSystemBuilder(csmd);
+        window.positionData = c.calculate(1000);
+        window.cursor = new CrewCursor(container, csmd);
     }
 
     function error(errString) {
