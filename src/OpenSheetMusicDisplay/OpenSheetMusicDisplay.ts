@@ -74,6 +74,10 @@ export class OpenSheetMusicDisplay {
     private resizeHandlerAttached: boolean;
     private followCursor: boolean;
 
+    public getGraphic(): GraphicalMusicSheet {
+        return this.graphic;
+    }
+
     /**
      * Load a MusicXML file
      * @param content is either the url of a file, or the root node of a MusicXML document, or the string content of a .xml/.mxl file
@@ -455,7 +459,7 @@ export class OpenSheetMusicDisplay {
      * @param startCallback is the function called when resizing starts
      * @param endCallback is the function called when resizing (kind-of) ends
      */
-    private handleResize(startCallback: () => void, endCallback: () => void): void {
+    public handleResize(startCallback: () => void, endCallback: () => void): void {
         let rtime: number;
         let timeout: number = undefined;
         const delta: number = 200;

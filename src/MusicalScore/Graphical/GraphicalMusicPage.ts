@@ -52,6 +52,8 @@ export class GraphicalMusicPage extends GraphicalObject {
             return new PointF2D(0.0, pageIndex * rules.PageHeight);
         } else if (rules.PagePlacement === PagePlacementEnum.Right) {
             return new PointF2D(pageIndex * this.parent.ParentMusicSheet.pageWidth, 0.0);
+        } else if (rules.PagePlacement === PagePlacementEnum.Same) {
+            return new PointF2D(0.0, 0.0);
         } else {
             // placement RightDown
             if (pageIndex % 2 === 0) {
@@ -74,5 +76,6 @@ export class GraphicalMusicPage extends GraphicalObject {
 export enum PagePlacementEnum {
     Down,
     Right,
-    RightDown
+    RightDown,
+    Same,
 }

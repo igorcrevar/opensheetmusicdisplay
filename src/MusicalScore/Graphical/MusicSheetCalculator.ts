@@ -295,14 +295,12 @@ export abstract class MusicSheetCalculator {
         // don't perform any y-spacing in case of a StaffEntryLink (in both StaffLines)
         if (!musicSystem.checkStaffEntriesForStaffEntryLink()) {
             for (let i: number = 0; i < musicSystem.StaffLines.length - 1; i++) {
-                const upperBottomLine: number = musicSystem.StaffLines[i].SkyBottomLineCalculator.getBottomLineMax();
-                // TODO: Lower skyline should add to offset when there are items above the line. Currently no test
-                // file available
-                // const lowerSkyLine: number = Math.min(...musicSystem.StaffLines[i + 1].SkyLine);
-                if (Math.abs(upperBottomLine) > this.rules.MinimumStaffLineDistance) {
+                const upperBottomLine: number = musicSystem.StaffLines[i + 1].PositionAndShape.RelativePosition.y -
+                    musicSystem.StaffLines[i].PositionAndShape.RelativePosition.y;
+                const diff: number = upperBottomLine - this.rules.StaffDistance;
+                if (diff !== 0) {
                     // Remove staffheight from offset. As it results in huge distances
-                    const offset: number = Math.abs(upperBottomLine) + this.rules.MinimumStaffLineDistance - this.rules.StaffHeight;
-                    this.updateStaffLinesRelativePosition(musicSystem, i + 1, offset);
+                    this.updateStaffLinesRelativePosition(musicSystem, i + 1, diff);
                 }
             }
         }

@@ -89,6 +89,11 @@ export abstract class MusicSheetDrawer {
         }
     }
 
+    public drawSinglePage(graphicalMusicSheet: GraphicalMusicSheet, page: GraphicalMusicPage): void {
+        this.graphicalMusicSheet = graphicalMusicSheet;
+        this.drawPage(page);
+    }
+
     public drawLineAsHorizontalRectangle(line: GraphicalLine, layer: number): void {
         let rectangle: RectangleF2D = new RectangleF2D(line.Start.x, line.End.y - line.Width / 2, line.End.x - line.Start.x, line.Width);
         rectangle = this.applyScreenTransformationForRect(rectangle);

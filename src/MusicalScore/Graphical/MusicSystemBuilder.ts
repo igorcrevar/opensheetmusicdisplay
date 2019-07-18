@@ -181,9 +181,11 @@ export class MusicSystemBuilder {
         if (hasMoreMeasures) {
             if (shouldCreateNewPage) {
                 this.currentMusicPage = this.createMusicPage();
-                this.currentPageHeight = this.rules.PageTopMargin + this.rules.TitleTopDistance;
             }
             this.currentSystemParams.currentSystem = this.initMusicSystem();
+            if (shouldCreateNewPage) {
+                this.currentPageHeight = this.currentSystemParams.currentSystem.PositionAndShape.RelativePosition.y;
+            }
             this.layoutSystemStaves();
             this.addSystemLabels();
         }
