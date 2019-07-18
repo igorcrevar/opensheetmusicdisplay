@@ -1,4 +1,8 @@
 import { OpenSheetMusicDisplay } from '../src/OpenSheetMusicDisplay/OpenSheetMusicDisplay';
+import { CrewSheetMusicDisplay } from "../src/Crew/CrewSheetMusicDisplay";
+import { CrewCursorSystemBuilder } from "../src/Crew/CrewCursorSystemBuilder";
+import { CrewCursor } from "../src/Crew/CrewCursor";
+import { EngravingRules } from '../src';
 
 /*jslint browser:true */
 (function () {
@@ -398,16 +402,31 @@ import { OpenSheetMusicDisplay } from '../src/OpenSheetMusicDisplay/OpenSheetMus
             }
         }
 
+        // EngravingRules by crew
+        EngravingRules.Rules.StaffDistance = 4 * 1.8;
+        EngravingRules.Rules.StaffHeight = 4 * 1.8;
+        EngravingRules.Rules.SystemDistance = 20;
+        EngravingRules.Rules.ExactStaffLineDistance = 7.0;
+        EngravingRules.Rules.PageLeftMargin = 2.0;
+        EngravingRules.Rules.PageRightMargin = 2.0;
+        EngravingRules.Rules.RenderPartNames = false;
+        EngravingRules.Rules.RenderPartAbbreviations = false;
+
         // Create OSMD object and canvas
         openSheetMusicDisplay = new OpenSheetMusicDisplay(canvas, {
-            autoResize: true,
+            autoResize: false,
             backend: backendType,
             //backend: "canvas",
-            disableCursor: false,
+            followCursor: false,
             drawingParameters: compactMode ? "compact" : "default", // try compact (instead of default)
-            drawPartNames: true, // try false
-            // drawTitle: false,
-            // drawSubtitle: false,
+            drawPartNames: false, // try false
+            drawTitle: false,
+            drawSubtitle: true,
+            drawComposer: false,
+            drawCredits: false,
+            drawLyricist: false,
+            //drawFromMeasureNumber: 4,
+            //drawUpToMeasureNumber: 8,
             drawFingerings: true,
             fingeringPosition: "left", // left is default. try right. experimental: auto, above, below.
             // fingeringInsideStafflines: "true", // default: false. true draws fingerings directly above/below notes
@@ -431,7 +450,6 @@ import { OpenSheetMusicDisplay } from '../src/OpenSheetMusicDisplay/OpenSheetMus
                 //groups: [[3,4], [1,1]],
                 maintain_stem_directions: false
             },
-
             pageFormat: pageFormat,
             pageBackgroundColor: pageBackgroundColor,
             renderSingleHorizontalStaffline: singleHorizontalStaffline
@@ -441,12 +459,13 @@ import { OpenSheetMusicDisplay } from '../src/OpenSheetMusicDisplay/OpenSheetMus
             // tupletsRatioed: true, // unconventional; renders ratios for tuplets (3:2 instead of 3 for triplets)
         });
         openSheetMusicDisplay.setLogLevel('info'); // set this to 'debug' if you want to see more detailed control flow information in console
-        document.body.appendChild(canvas);
+        var container = document.getElementById('vfContainer');
+        container.appendChild(canvas);
 
         window.addEventListener("keydown", function (e) {
             var event = window.event ? window.event : e;
             if (event.keyCode === 39) {
-                openSheetMusicDisplay.cursor.next();
+                //openSheetMusicDisplay.cursor.next();
             }
         });
         nextCursorBtn.addEventListener("click", function () {
@@ -578,7 +597,7 @@ import { OpenSheetMusicDisplay } from '../src/OpenSheetMusicDisplay/OpenSheetMus
                 // This gives you access to the osmd object in the console. Do not use in productive code
                 window.osmd = openSheetMusicDisplay;
                 openSheetMusicDisplay.zoom = zoom;
-                return openSheetMusicDisplay.render();
+                return renderPages();
             },
             function (e) {
                 errorLoadingOrRenderingSheet(e, "rendering");
@@ -614,8 +633,8 @@ import { OpenSheetMusicDisplay } from '../src/OpenSheetMusicDisplay/OpenSheetMus
             //maxMeasureToDraw = 1;
             console.log("drawing measures in the range: [" + minMeasureToDraw + "," + maxMeasureToDraw + "]");
             openSheetMusicDisplay.setOptions({
-                drawFromMeasureNumber: minMeasureToDraw,
-                drawUpToMeasureNumber: maxMeasureToDraw
+                //drawFromMeasureNumber: minMeasureToDraw,
+                //drawUpToMeasureNumber: maxMeasureToDraw
             });
         } else if (measureToDrawRangeNeedsReset) { // reset for other samples
             openSheetMusicDisplay.setOptions({
@@ -694,7 +713,7 @@ import { OpenSheetMusicDisplay } from '../src/OpenSheetMusicDisplay/OpenSheetMus
         disable();
         window.setTimeout(function () {
             openSheetMusicDisplay.zoom = zoom;
-            openSheetMusicDisplay.render();
+            renderPages();
             enable();
         }, 0);
     }
@@ -703,13 +722,46 @@ import { OpenSheetMusicDisplay } from '../src/OpenSheetMusicDisplay/OpenSheetMus
         disable();
         window.setTimeout(function () {
             if (openSheetMusicDisplay.IsReadyToRender()) {
-                openSheetMusicDisplay.render();
+                renderPages();
             } else {
                 console.log("[OSMD demo] Looses context!"); // TODO not sure that this message is reasonable, renders fine anyways. maybe vexflow context lost?
                 selectSampleOnChange(); // reload sample e.g. after osmd.clear()
             }
             enable();
         }, 0);
+    }
+
+    var csmd = null;
+    function renderPages() {
+        var container = document.getElementById('vfContainer');
+        if (!csmd) {
+            csmd = new CrewSheetMusicDisplay(openSheetMusicDisplay, container);
+             // auto resize
+            osmd.AutoResizeEnabled = true;
+            osmd.handleResize(
+                () => { },
+                () => {
+                    if (osmd.IsReadyToRender()) {
+                        renderPages();
+                    }
+                }
+            );
+            window.csmd = csmd;
+        }
+
+        //osmd.render();
+        csmd.render();
+        csmd.fitToScreenZoom(true);
+        
+        const cursor = new CrewCursor(container, csmd, new CrewCursorSystemBuilder());
+        cursor.init(1000, true, null);
+        if (!!container.onclick) {
+            container.removeAttribute('onclick');
+        }
+        container.onclick = function (e) {
+            cursor.onClickHandler(e);
+        };
+        window.cursor = cursor;
     }
 
     function error(errString) {

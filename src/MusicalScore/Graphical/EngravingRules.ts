@@ -164,6 +164,7 @@ export class EngravingRules {
     private octaveShiftLineWidth: number;
     private octaveShiftVerticalLineLength: number;
     private graceLineWidth: number;
+    private exactStaffLineDistance: number = 0.0;
     private minimumStaffLineDistance: number;
     private minimumCrossedBeamDifferenceMargin: number;
     private displacedNoteMargin: number;
@@ -1290,6 +1291,12 @@ export class EngravingRules {
     }
     public set GraceLineWidth(value: number) {
         this.graceLineWidth = value;
+    }
+    public get ExactStaffLineDistance(): number {
+        return this.exactStaffLineDistance;
+    }
+    public set ExactStaffLineDistance(value: number) {
+        this.exactStaffLineDistance = value;
     }
     public get MinimumStaffLineDistance(): number {
         return this.minimumStaffLineDistance;

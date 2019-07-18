@@ -320,20 +320,19 @@ export class VexFlowMusicSheetDrawer extends MusicSheetDrawer {
                 textBracket.setContext(ctx);
                 const startX: number = staffLine.PositionAndShape.AbsolutePosition.x + textBracket.start.getX() / 10;
                 const stopX: number = staffLine.PositionAndShape.AbsolutePosition.x + textBracket.stop.getX() / 10;
+                let spaceAbove: number;
                 if ((<any>textBracket).position === Vex.Flow.TextBracket.Positions.TOP) {
-                    const headroom: number = staffLine.SkyBottomLineCalculator.getSkyLineMinInRange(startX, stopX);
-                    if (headroom === Infinity) { // will cause Vexflow error
-                        return;
-                    }
-                    textBracket.start.getStave().options.space_above_staff_ln = headroom;
+                    spaceAbove = staffLine.SkyBottomLineCalculator.getSkyLineMinInRange(startX, stopX);
                 } else {
-                    const footroom: number = staffLine.SkyBottomLineCalculator.getBottomLineMaxInRange(startX, stopX);
-                    if (footroom === Infinity) { // will cause Vexflow error
-                        return;
-                    }
-                    textBracket.start.getStave().options.space_below_staff_ln = footroom;
+                    spaceAbove = staffLine.SkyBottomLineCalculator.getBottomLineMaxInRange(startX, stopX);
                 }
-                textBracket.draw();
+
+                if (isFinite(spaceAbove)) {
+                    textBracket.start.getStave().options.space_above_staff_ln = spaceAbove;
+                    textBracket.draw();
+                } else {
+                    console.log("Graphical octave shift, space above is infinite: ", startX, stopX, textBracket.position);
+                }
             }
         }
     }

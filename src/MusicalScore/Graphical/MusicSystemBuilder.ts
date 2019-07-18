@@ -912,6 +912,12 @@ export class MusicSystemBuilder {
         // don't perform any y-spacing in case of a StaffEntryLink (in both StaffLines)
         if (!musicSystem.checkStaffEntriesForStaffEntryLink()) {
             for (let i: number = 0; i < musicSystem.StaffLines.length - 1; i++) {
+                // crew hack! - distances between staffs
+                if (this.rules.ExactStaffLineDistance > 0.0) {
+                    this.updateStaffLinesRelativePosition(musicSystem, i + 1, this.rules.ExactStaffLineDistance);
+                    continue;
+                }
+
                 const upperBottomLine: number = musicSystem.StaffLines[i].SkyBottomLineCalculator.getBottomLineMax();
                 // TODO: Lower skyline should add to offset when there are items above the line. Currently no test
                 // file available

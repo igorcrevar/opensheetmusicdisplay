@@ -18,6 +18,14 @@ export class RhythmInstruction extends AbstractNotationInstruction {
     private rhythm: Fraction;
     private symbolEnum: RhythmSymbolEnum;
 
+    public get Numerator(): number {
+        return this.numerator;
+    }
+
+    public get Denominator(): number {
+        return this.denominator;
+    }
+
     public get Rhythm(): Fraction {
         return this.rhythm;
     }
