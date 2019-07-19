@@ -1,3 +1,5 @@
+import { VexFlowBackend, VexFlowMusicSheetDrawer } from "../../MusicalScore/Graphical/VexFlow";
+
 export type CrewTimeSignature = {
     barIndex: number;
     beatsPerMeasure: number;
@@ -34,10 +36,29 @@ export type CrewPosition = {
     index: number;
 };
 
+export type CrewInstrument = {
+    midiId: number;
+    volume: number;
+    tempoInBPM: number;
+};
+
 export type CrewCursorSystemData = {
     beatDurationInMilis: number;
     barsCount: number;
     metronom: CrewTimeSignature[];
     positions: CrewPosition[];
     duration: number;
+    instrumentPerStave: CrewInstrument[];
 };
+
+export type CrewPageData = {
+    backend: VexFlowBackend;
+    canvas: HTMLElement;
+    drawer: VexFlowMusicSheetDrawer;
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+};
+
+

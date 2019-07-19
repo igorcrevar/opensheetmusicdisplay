@@ -368,9 +368,7 @@ import { EngravingRules } from '../src';
              // auto resize
             osmd.AutoResizeEnabled = true;
             osmd.handleResize(
-                () => {
-                    // empty
-                },
+                () => { },
                 () => {
                     if (osmd.IsReadyToRender()) {
                         renderPages();
@@ -382,9 +380,15 @@ import { EngravingRules } from '../src';
 
         //osmd.render();
         csmd.render();
-        const c = new CrewCursorSystemBuilder(csmd);
-        window.positionData = c.calculate(1000);
-        window.cursor = new CrewCursor(container, csmd);
+        const cursor = new CrewCursor(container, csmd, new CrewCursorSystemBuilder());
+        cursor.init(1000, true);
+        if (!!container.onclick) {
+            container.removeAttribute('onclick');
+        }
+        container.onclick = function (e) {
+            cursor.onClickHandler(e);
+        };
+        window.cursor = cursor;
     }
 
     function error(errString) {

@@ -1,8 +1,8 @@
-import { CrewSheetMusicDisplay } from "./CrewSheetMusicDisplay";
-import { GraphicalMusicSheet, GraphicalMeasure } from "../MusicalScore";
+import { GraphicalMeasure } from "../MusicalScore";
 import { CrewStaveMeasureData } from "./Common/CrewStaveMeasureData";
 import { Set } from "typescript-collections";
-import { CrewPosition, CrewCursorSystemData } from "./Common/CrewCommonTypes";
+import { CrewPosition, CrewCursorSystemData, CrewInstrument } from "./Common/CrewCommonTypes";
+import { OpenSheetMusicDisplay } from "../OpenSheetMusicDisplay";
 
 type StaveIterator = {
     index: number;
@@ -10,18 +10,11 @@ type StaveIterator = {
 };
 
 export class CrewCursorSystemBuilder {
-    private parent: CrewSheetMusicDisplay;
-
-    constructor(parent: CrewSheetMusicDisplay) {
-        this.parent = parent;
-    }
-
-    public calculate(beatDurationInMilis: number): CrewCursorSystemData {
-        const graphic: GraphicalMusicSheet = this.parent.getGraphic();
-        const measureList: GraphicalMeasure[][] = this.transpose(graphic.MeasureList);
+    public calculate(osmd: OpenSheetMusicDisplay, beatDurationInMilis: number): CrewCursorSystemData {
+        const measureList: GraphicalMeasure[][] = this.transpose(osmd.getGraphic().MeasureList);
         const staveDataList: CrewStaveMeasureData[] = [];
         const staveIteratorList: StaveIterator[] = [];
-        for (let i: number = 0; i < graphic.NumberOfStaves; ++i) {
+        for (let i: number = 0; i < osmd.getGraphic().NumberOfStaves; ++i) {
             staveDataList.push(new CrewStaveMeasureData(i, measureList[i], beatDurationInMilis));
             staveIteratorList.push({
                 index: 0,
@@ -33,9 +26,23 @@ export class CrewCursorSystemBuilder {
             barsCount: staveDataList[0].TotalBarsCount,
             beatDurationInMilis: beatDurationInMilis,
             duration: staveDataList.reduce((v, curr) => Math.max(v, curr.TotalDuration), 0),
+            instrumentPerStave: staveIteratorList.map(x => ({
+                midiId: 0,
+                tempoInBPM: 100,
+                volume: 1,
+            })),
             metronom: staveDataList[0].TimeSignatures,
             positions: []
         };
+
+        for (const osmdInstr of osmd.Sheet.Instruments) {
+            for (const stave of osmdInstr.Staves) {
+                const instr: CrewInstrument = result.instrumentPerStave[stave.idInMusicSheet];
+                instr.midiId = osmdInstr.MidiInstrumentId;
+                instr.volume = stave.Volume;
+                instr.tempoInBPM = osmdInstr.GetMusicSheet.userStartTempoInBPM;
+            }
+        }
 
         while (true) {
             const staveIncluded: Set<number> = this.getStaveIncluded(staveDataList, staveIteratorList);
