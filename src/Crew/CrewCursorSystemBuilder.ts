@@ -1,25 +1,18 @@
-import { GraphicalMeasure } from "../MusicalScore";
+import { GraphicalMeasure, MusicSystem, GraphicalMusicPage } from "../MusicalScore";
 import { CrewStaveMeasureData } from "./Common/CrewStaveMeasureData";
-import { Set } from "typescript-collections";
-import { CrewPosition, CrewCursorSystemData, CrewInstrument } from "./Common/CrewCommonTypes";
+import { CrewPosition, CrewCursorSystemData, CrewInstrument, CrewMusicSystemYData } from "./Common/CrewCommonTypes";
 import { OpenSheetMusicDisplay } from "../OpenSheetMusicDisplay";
-
-type StaveIterator = {
-    index: number;
-    last: CrewPosition;
-};
+import { VexFlowMeasure } from "../MusicalScore/Graphical/VexFlow";
 
 export class CrewCursorSystemBuilder {
     public calculate(osmd: OpenSheetMusicDisplay, beatDurationInMilis: number): CrewCursorSystemData {
         const measureList: GraphicalMeasure[][] = this.transpose(osmd.getGraphic().MeasureList);
         const staveDataList: CrewStaveMeasureData[] = [];
-        const staveIteratorList: StaveIterator[] = [];
+        const staveIteratorList: number[] = [];
+        const musicSystemData: CrewMusicSystemYData[] = this.getMusicSystemData(osmd);
         for (let i: number = 0; i < osmd.getGraphic().NumberOfStaves; ++i) {
-            staveDataList.push(new CrewStaveMeasureData(i, measureList[i], beatDurationInMilis));
-            staveIteratorList.push({
-                index: 0,
-                last: undefined,
-            });
+            staveDataList.push(new CrewStaveMeasureData(i, measureList[i], musicSystemData, beatDurationInMilis));
+            staveIteratorList.push(0); // for each stave iterator index is set to zero (first position)
         }
 
         const result: CrewCursorSystemData = {
@@ -31,7 +24,7 @@ export class CrewCursorSystemBuilder {
                 tempoInBPM: 100,
                 volume: 1,
             })),
-            metronom: staveDataList[0].TimeSignatures,
+            metronom: staveDataList.map(x => x.TimeSignatures),
             positions: []
         };
 
@@ -45,7 +38,7 @@ export class CrewCursorSystemBuilder {
         }
 
         while (true) {
-            const staveIncluded: Set<number> = this.getStaveIncluded(staveDataList, staveIteratorList);
+            const staveIncluded: CrewPosition[] = this.getStaveIncluded(staveDataList, staveIteratorList);
             // nothing else to process
             if (!staveIncluded) {
                 break;
@@ -54,18 +47,10 @@ export class CrewCursorSystemBuilder {
             const position: CrewPosition = this.createNewPosition(result.positions.length);
             result.positions.push(position);
 
-            for (let i: number = 0; i < staveDataList.length; ++i) {
-                const staveIterator: StaveIterator = staveIteratorList[i];
-                if (staveIncluded.contains(i)) {
-                    const stavePosition: CrewPosition = staveDataList[i].Positions[staveIterator.index];
-                    this.updatePosition(position, stavePosition);
-                    // update last position for stave and iterator index
-                    staveIterator.last = stavePosition;
-                    ++staveIterator.index;
-                } else if (!!staveIterator.last) {
-                    position.startY = Math.min(position.startY, staveIterator.last.startY);
-                    position.endY = Math.max(position.endY, staveIterator.last.endY);
-                }
+            for (let i: number = 0; i < staveIncluded.length; ++i) {
+                const stavePosition: CrewPosition = staveIncluded[i];
+                this.updatePosition(position, stavePosition);
+                ++staveIteratorList[stavePosition.notes[0].staveIndex];
             }
         }
         return result;
@@ -101,20 +86,19 @@ export class CrewCursorSystemBuilder {
         };
     }
 
-    private getStaveIncluded(staveDataList: CrewStaveMeasureData[], staveIteratorList: StaveIterator[]): Set<number> {
+    private getStaveIncluded(staveDataList: CrewStaveMeasureData[], staveIteratorList: number[]): CrewPosition[] {
         let minTime: number = Infinity;
-        let staveIncluded: Set<number> = undefined;
+        let staveIncluded: CrewPosition[] = undefined;
         for (let i: number = 0; i < staveDataList.length; ++i) {
             const stavePositions: CrewPosition[] = staveDataList[i].Positions;
-            const staveIterator: StaveIterator = staveIteratorList[i];
-            if (staveIterator.index < stavePositions.length) {
-                const position: CrewPosition = stavePositions[staveIterator.index];
+            const staveIterator: number = staveIteratorList[i];
+            if (staveIterator < stavePositions.length) {
+                const position: CrewPosition = stavePositions[staveIterator];
                 if (position.time < minTime) {
-                    staveIncluded = new Set();
-                    staveIncluded.add(i);
+                    staveIncluded = [position];
                     minTime = position.time;
                 } else if (Math.abs(position.time - minTime) < 0.001) {
-                    staveIncluded.add(i);
+                    staveIncluded.push(position);
                 }
             }
         }
@@ -125,5 +109,25 @@ export class CrewCursorSystemBuilder {
         return Object.keys(measureList[0]).map(c => {
             return measureList.map(r => r[c]);
         });
+    }
+
+    private getMusicSystemData(osmd: OpenSheetMusicDisplay): CrewMusicSystemYData[] {
+        const result: CrewMusicSystemYData[] = [];
+        const musicPages: GraphicalMusicPage[] = osmd.getGraphic().MusicPages;
+        for (let pageIndex: number = 0; pageIndex < musicPages.length; ++pageIndex) {
+            const musicPage: GraphicalMusicPage = musicPages[pageIndex];
+            for (let i: number = 0; i < musicPage.MusicSystems.length; ++i) {
+                const ms: MusicSystem = musicPage.MusicSystems[i];
+                const barTop: VexFlowMeasure = <VexFlowMeasure>ms.GraphicalMeasures[0][0];
+                const barBottom: VexFlowMeasure = <VexFlowMeasure>ms.GraphicalMeasures[0].last();
+                result.push({
+                    endY: barBottom.getVFStave().getBottomLineY(),
+                    index: i,
+                    pageIndex: pageIndex,
+                    startY: barTop.getVFStave().getTopLineTopY(),
+                });
+            }
+        }
+        return result;
     }
 }

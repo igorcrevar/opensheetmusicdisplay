@@ -1,4 +1,4 @@
-import { CrewTimeSignature, CrewPosition } from "./CrewCommonTypes";
+import { CrewTimeSignature, CrewPosition, CrewMusicSystemYData } from "./CrewCommonTypes";
 import { GraphicalMeasure, GraphicalStaffEntry, GraphicalNote, SourceMeasure, Note } from "../../MusicalScore";
 import { VexFlowGraphicalNote, VexFlowMeasure } from "../../MusicalScore/Graphical/VexFlow";
 import { AbstractNotationInstruction, RhythmInstruction } from "../../MusicalScore/VoiceData/Instructions";
@@ -18,10 +18,12 @@ export class CrewStaveMeasureData {
     private totalDuration: number;
 
     private bars: GraphicalMeasure[];
+    private musicSystemData: CrewMusicSystemYData[];
 
-    constructor(staveIndex: number, bars: GraphicalMeasure[], beatDurationInMilis: number) {
+    constructor(staveIndex: number, bars: GraphicalMeasure[], musicSystemData: CrewMusicSystemYData[], beatDurationInMilis: number) {
         this.staveIndex = staveIndex;
         this.bars = bars;
+        this.musicSystemData = musicSystemData;
 
         this.process(beatDurationInMilis);
     }
@@ -72,21 +74,21 @@ export class CrewStaveMeasureData {
             const barDuration: number = beatDurationInMilis * beatsPerBar;
             const barTime: number = this.totalDuration;
             this.totalDuration += barDuration;
-
             for (let j: number = 0; j < bar.staffEntries.length; ++j) {
                 const staffEntry: GraphicalStaffEntry = bar.staffEntries[j];
                 const relInMeasure: number = staffEntry.relInMeasureTimestamp.RealValue;
                 const time: number = barTime + relInMeasure / sourceMeasure.Duration.RealValue * barDuration;
                 const beatIndex: number = relInMeasure !== 0 ? Math.floor(beatsPerBar * relInMeasure / sourceMeasure.Duration.RealValue) : 0;
+                const musicSystemData: CrewMusicSystemYData = this.musicSystemData[bar.parentMusicSystem.Id];
 
                 const lastPosition: CrewPosition = {
-                    endY: bar.getVFStave().getBottomLineY(),
+                    endY: musicSystemData.endY,
                     index: this.positions.length,
                     measureIndex: i,
                     notes: [],
-                    pageIndex: -1,
+                    pageIndex: musicSystemData.pageIndex,
                     startX: Infinity,
-                    startY: bar.getVFStave().getTopLineTopY(), //.getYForTopText(0)
+                    startY: musicSystemData.startY,
                     time: time,
                     width: Infinity,
                 };
@@ -112,11 +114,6 @@ export class CrewStaveMeasureData {
                             }
                         }
 
-                        // page index should be set from first note
-                        if (lastPosition.pageIndex === -1) {
-                            lastPosition.pageIndex = this.getPageForNote(vfNote);
-                        }
-
                         lastPosition.notes.push({
                             barIndex: i,
                             beatIndex: beatIndex,
@@ -130,21 +127,6 @@ export class CrewStaveMeasureData {
                 }
             }
         }
-    }
-
-    private getPageForNote(note: Vex.Flow.StaveNote): number {
-        let el: Node = note.getAttribute("el");
-        while (!!el.parentNode) {
-            if (el.parentNode instanceof HTMLElement) {
-                const htmlElement: HTMLElement = <HTMLElement>el.parentNode;
-                const id: string = htmlElement.getAttribute("id");
-                if (!!id && id.match(/^vfPage_/)) {
-                    return parseInt(id.substr("vfPage_".length), 10);
-                }
-            }
-            el = el.parentNode;
-        }
-        return 0;
     }
 
     private getNoteNoteHeads(note: Vex.Flow.StaveNote): SVGGraphicsElement[] {

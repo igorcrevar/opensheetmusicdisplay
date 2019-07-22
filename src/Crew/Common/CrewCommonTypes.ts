@@ -45,10 +45,17 @@ export type CrewInstrument = {
 export type CrewCursorSystemData = {
     beatDurationInMilis: number;
     barsCount: number;
-    metronom: CrewTimeSignature[];
+    metronom: CrewTimeSignature[][];
     positions: CrewPosition[];
     duration: number;
     instrumentPerStave: CrewInstrument[];
+};
+
+export type CrewMusicSystemYData = {
+    index: number;
+    pageIndex: number;
+    startY: number;
+    endY: number;
 };
 
 export type CrewPageData = {
@@ -60,5 +67,6 @@ export type CrewPageData = {
     width: number;
     height: number;
 };
+
 
 

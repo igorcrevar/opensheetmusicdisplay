@@ -108,11 +108,14 @@ export class CrewCursor {
             const pos: CrewPosition = positions[i];
             if (pos.pageIndex === desiredPage) {
                 const page: CrewPageData = pagesData[pos.pageIndex];
-                let xDiff: number = (page.left + pos.startX * zoom) - mouseX;
-                xDiff = xDiff * xDiff;
-                const yDiff: number = (page.top + pos.startY * zoom) - mouseY;
-                const yDiff2: number = (page.top + pos.endY * zoom) - mouseY;
-                const newDist: number = Math.min(xDiff + yDiff * yDiff, xDiff + yDiff2 * yDiff2);
+                const yMin: number = page.top + pos.startY * zoom;
+                const yMax: number = page.top + pos.endY * zoom;
+                const xMin: number = page.left + pos.startX * zoom;
+                const xMax: number = page.left + (pos.startX + pos.width) * zoom;
+                // https://stackoverflow.com/questions/5254838/calculating-distance-between-a-point-and-a-rectangular-box-nearest-point
+                const dx: number = Math.max(xMin - mouseX, 0, mouseX - xMax);
+                const dy: number = Math.max(yMin - mouseY, 0, mouseY - yMax);
+                const newDist: number = dx * dx + dy * dy;
                 if (newDist < dist) {
                     resultPosition = pos;
                     dist = newDist;
