@@ -5,14 +5,18 @@ import { OpenSheetMusicDisplay } from "../OpenSheetMusicDisplay";
 import { VexFlowMeasure } from "../MusicalScore/Graphical/VexFlow";
 
 export class CrewCursorSystemBuilder {
-    public calculate(osmd: OpenSheetMusicDisplay, beatDurationInMilis: number): CrewCursorSystemData {
+    public calculate(osmd: OpenSheetMusicDisplay, beatDurationInMilis: number, skipStaves: number[]): CrewCursorSystemData {
         const measureList: GraphicalMeasure[][] = this.transpose(osmd.getGraphic().MeasureList);
         const staveDataList: CrewStaveMeasureData[] = [];
         const staveIteratorList: number[] = [];
         const musicSystemData: CrewMusicSystemYData[] = this.getMusicSystemData(osmd);
+        const allStaves: number[] = [];
         for (let i: number = 0; i < osmd.getGraphic().NumberOfStaves; ++i) {
             staveDataList.push(new CrewStaveMeasureData(i, measureList[i], musicSystemData, beatDurationInMilis));
             staveIteratorList.push(0); // for each stave iterator index is set to zero (first position)
+            if (!skipStaves || !(i in skipStaves)) {
+                allStaves.push(i);
+            }
         }
 
         const result: CrewCursorSystemData = {
@@ -25,6 +29,7 @@ export class CrewCursorSystemBuilder {
                 volume: 1,
             })),
             metronom: staveDataList.map(x => x.TimeSignatures),
+            numberOfSystemsPerPage: osmd.getGraphic().MusicPages.map(x => x.MusicSystems.length),
             positions: []
         };
 
@@ -38,7 +43,7 @@ export class CrewCursorSystemBuilder {
         }
 
         while (true) {
-            const staveIncluded: CrewPosition[] = this.getStaveIncluded(staveDataList, staveIteratorList);
+            const staveIncluded: CrewPosition[] = this.getStaveIncluded(staveDataList, staveIteratorList, allStaves);
             // nothing else to process
             if (!staveIncluded) {
                 break;
@@ -58,6 +63,7 @@ export class CrewCursorSystemBuilder {
 
     private updatePosition(position: CrewPosition, fromPosition: CrewPosition): void {
         position.time = fromPosition.time;
+        position.systemIndex = fromPosition.systemIndex;
         position.measureIndex = fromPosition.measureIndex;
         position.pageIndex = fromPosition.pageIndex;
         // update notes
@@ -81,15 +87,17 @@ export class CrewCursorSystemBuilder {
             pageIndex: -1,
             startX: Infinity,
             startY: Infinity,
+            systemIndex: 0,
             time: 0,
             width: -1,
         };
     }
 
-    private getStaveIncluded(staveDataList: CrewStaveMeasureData[], staveIteratorList: number[]): CrewPosition[] {
+    private getStaveIncluded(staveDataList: CrewStaveMeasureData[], staveIteratorList: number[], allStaves: number[]): CrewPosition[] {
         let minTime: number = Infinity;
         let staveIncluded: CrewPosition[] = undefined;
-        for (let i: number = 0; i < staveDataList.length; ++i) {
+        for (let cnt: number = 0; cnt < allStaves.length; ++cnt) {
+            const i: number = allStaves[cnt];
             const stavePositions: CrewPosition[] = staveDataList[i].Positions;
             const staveIterator: number = staveIteratorList[i];
             if (staveIterator < stavePositions.length) {

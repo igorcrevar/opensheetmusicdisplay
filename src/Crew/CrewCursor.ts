@@ -46,8 +46,8 @@ export class CrewCursor {
         }
     }
 
-    public init(beatDurationInMilis: number, show: boolean): void {
-        this.cursorData = this.builder.calculate(this.csmd.getOsmd(), beatDurationInMilis);
+    public init(beatDurationInMilis: number, show: boolean, skipStaves: number[]): void {
+        this.cursorData = this.builder.calculate(this.csmd.getOsmd(), beatDurationInMilis, skipStaves);
         if (show) {
             this.add().show();
             const isValidPosition: boolean = this.currentPositionIndex >= 0 && this.currentPositionIndex < this.cursorData.positions.length;
@@ -156,6 +156,7 @@ export class CrewCursor {
             this.csmd.jumpToPage(position.pageIndex);
         }
         const pageData: CrewPageData = this.csmd.getPageData(position.pageIndex);
+        const systemsPerPage: number = this.cursorData.numberOfSystemsPerPage[position.pageIndex];
         const width: number = position.width * this.csmd.getZoom();
         const height: number = (position.endY - position.startY) * this.csmd.getZoom();
         const x: number = pageData.left + position.startX * this.csmd.getZoom();
@@ -164,25 +165,16 @@ export class CrewCursor {
         this.domNode.style.top = y + "px";
         this.domNode.style.width = width + "px";
         this.domNode.style.height = height + "px";
-        if (this.isInPlayMode && x > pageData.left + this.halfPageCorrectionInPixels + Math.floor(pageData.width / 2) && this.isAfterThisNextPage(position)) {
-            this.csmd.renderPagePreview(position.pageIndex, position.pageIndex + 1);
+        if (this.isInPlayMode) {
+            if (systemsPerPage === 1 && x > pageData.left + this.halfPageCorrectionInPixels + Math.floor(pageData.width / 2)) {
+                this.csmd.renderPagePreview(position.pageIndex, position.pageIndex + 1, true);
+            } else if (systemsPerPage > 1 && position.systemIndex === systemsPerPage - 1) {
+                this.csmd.renderPagePreview(position.pageIndex, position.pageIndex + 1, false);
+            } else {
+                this.csmd.hideRenderPreview();
+            }
         } else {
             this.csmd.hideRenderPreview();
         }
-    }
-
-    private isAfterThisNextPage(currPosition: CrewPosition): boolean {
-        let posIndex: number = currPosition.index;
-        let result: boolean = false;
-        while (++posIndex < this.cursorData.positions.length) {
-            const pos: CrewPosition = this.cursorData.positions[posIndex];
-            if (pos.pageIndex !== currPosition.pageIndex) {
-                result = true;
-                break;
-            } else if (pos.startY !== currPosition.startY) {
-                break;
-            }
-        }
-        return result;
     }
 }

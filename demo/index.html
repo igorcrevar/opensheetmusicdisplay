@@ -20,10 +20,10 @@
         }
 
         #vfContainer {
-           overflow: auto;
+           overflow-y: hidden;
            position: relative;
            width: 100%;
-           height: calc(100% - 400px); /* 62 */
+           height: 100%; /* before calc calc(100% - 400px); /* 62 */
         }
 
         .vfPage {
@@ -31,11 +31,18 @@
         }
 
         .vfPagePreview {
-            border-right: 4px solid green;
-            padding-left: 2px;
-            padding-right: 2px;
             overflow: hidden;
             background-clip: padding-box;
+        }
+
+		.vfPagePreviewVertical {
+            border-bottom: 4px solid green;
+            padding-bottom: 2px;
+        }
+		
+		.vfPagePreviewHorizontal {
+            border-right: 4px solid green;            
+			padding-right: 2px;
         }
 
         .crewCursor {
@@ -44,10 +51,14 @@
             height: 100px;
             background-color: rgba(255, 106, 0, 0.2);
         }
+
+        body {
+            display: flex;
+            flex-direction: column;
+        }
     </style>
 </head>
 <body>
-<br>
 <h1 class="ui centered header">
     <img src="./favicon.ico?" class="ui image">
     <%= htmlWebpackPlugin.options.title %>

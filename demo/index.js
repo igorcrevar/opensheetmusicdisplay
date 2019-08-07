@@ -380,8 +380,10 @@ import { EngravingRules } from '../src';
 
         //osmd.render();
         csmd.render();
+        csmd.fitToScreenZoom(true);
+        
         const cursor = new CrewCursor(container, csmd, new CrewCursorSystemBuilder());
-        cursor.init(1000, true);
+        cursor.init(1000, true, null);
         if (!!container.onclick) {
             container.removeAttribute('onclick');
         }

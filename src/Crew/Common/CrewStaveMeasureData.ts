@@ -89,6 +89,7 @@ export class CrewStaveMeasureData {
                     pageIndex: musicSystemData.pageIndex,
                     startX: Infinity,
                     startY: musicSystemData.startY,
+                    systemIndex: musicSystemData.index,
                     time: time,
                     width: Infinity,
                 };

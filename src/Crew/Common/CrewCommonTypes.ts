@@ -34,6 +34,7 @@ export type CrewPosition = {
     startX: number;
     width: number;
     index: number;
+    systemIndex: number;
 };
 
 export type CrewInstrument = {
@@ -49,6 +50,7 @@ export type CrewCursorSystemData = {
     positions: CrewPosition[];
     duration: number;
     instrumentPerStave: CrewInstrument[];
+    numberOfSystemsPerPage: number[];
 };
 
 export type CrewMusicSystemYData = {
