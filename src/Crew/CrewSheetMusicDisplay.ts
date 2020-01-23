@@ -1,6 +1,6 @@
 import { OpenSheetMusicDisplay } from "../OpenSheetMusicDisplay/OpenSheetMusicDisplay";
 import { SvgVexFlowBackend, VexFlowMusicSheetDrawer } from "../MusicalScore/Graphical/VexFlow";
-import { EngravingRules, PagePlacementEnum, GraphicalMusicSheet, GraphicalMusicPage } from "../MusicalScore";
+import { EngravingRules, PagePlacementEnum, GraphicalMusicSheet, GraphicalMusicPage, Instrument } from "../MusicalScore";
 import { CrewPageData } from "./Common/CrewCommonTypes";
 
 const PREVIEW_X_CORRECTION: number = 0;
@@ -202,6 +202,15 @@ export class CrewSheetMusicDisplay {
             data.canvas.style.left = data.left + "px";
             data.canvas.style.top = data.top + "px";
             data.canvas.style.width = width + "px";
+        }
+    }
+
+    public showInstruments(shown: (string|number)[]): void {
+        const graphic: GraphicalMusicSheet = this.parent.getGraphic();
+        for (let i: number = 0; i < graphic.ParentMusicSheet.Instruments.length; ++i) {
+            const instrument: Instrument = graphic.ParentMusicSheet.Instruments[i];
+            instrument.Visible = !shown || shown.contains(i) ||
+                shown.contains(!!instrument.Name ? instrument.Name.toLowerCase() : "");
         }
     }
 }

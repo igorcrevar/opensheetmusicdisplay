@@ -151,6 +151,28 @@ export class CrewCursor {
     }
 
     private setPosition(position: CrewPosition, forceJumpToPage: boolean): void {
+        // position.pageIndex is -1 if current position is not shown (hidden)
+        // this position can not be set to current, it should be only used for playing etc
+        if (position.pageIndex === -1) {
+            let i: number = position.index - 1;
+            while (i >= 0 && this.cursorData.positions[i].pageIndex === -1) {
+                --i;
+            }
+            if (i >= 0) {
+                position = this.cursorData.positions[i];
+            } else {
+                i = position.index + 1;
+                while (i < this.cursorData.positions.length && this.cursorData.positions[i].pageIndex === -1) {
+                    ++i;
+                }
+                if (i < this.cursorData.positions.length) {
+                    position = this.cursorData.positions[i];
+                } else {
+                    return; // there aren't any position which is displayed
+                }
+            }
+        }
+
         this.currentPositionIndex = position.index;
         if (this.isInPlayMode || forceJumpToPage) {
             this.csmd.jumpToPage(position.pageIndex);

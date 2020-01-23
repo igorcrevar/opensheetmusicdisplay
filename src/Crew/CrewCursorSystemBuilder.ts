@@ -63,19 +63,22 @@ export class CrewCursorSystemBuilder {
 
     private updatePosition(position: CrewPosition, fromPosition: CrewPosition): void {
         position.time = fromPosition.time;
-        position.systemIndex = fromPosition.systemIndex;
         position.measureIndex = fromPosition.measureIndex;
-        position.pageIndex = fromPosition.pageIndex;
+        if (fromPosition.pageIndex !== -1) {
+            position.systemIndex = fromPosition.systemIndex;
+            position.pageIndex = fromPosition.pageIndex;
+            // update y position
+            position.startY = Math.min(position.startY, fromPosition.startY);
+            position.endY = Math.max(position.endY, fromPosition.endY);
+            // update x position
+            if (position.startX > fromPosition.startX) {
+                position.startX = fromPosition.startX;
+                position.width = fromPosition.width;
+            }
+        }
+
         // update notes
         position.notes = position.notes.concat(fromPosition.notes);
-        // update y position
-        position.startY = Math.min(position.startY, fromPosition.startY);
-        position.endY = Math.max(position.endY, fromPosition.endY);
-        // update x position
-        if (position.startX > fromPosition.startX) {
-            position.startX = fromPosition.startX;
-            position.width = fromPosition.width;
-        }
     }
 
     private createNewPosition(index: number): CrewPosition {

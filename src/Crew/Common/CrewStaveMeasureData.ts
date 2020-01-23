@@ -79,41 +79,35 @@ export class CrewStaveMeasureData {
                 const relInMeasure: number = staffEntry.relInMeasureTimestamp.RealValue;
                 const time: number = barTime + relInMeasure / sourceMeasure.Duration.RealValue * barDuration;
                 const beatIndex: number = relInMeasure !== 0 ? Math.floor(beatsPerBar * relInMeasure / sourceMeasure.Duration.RealValue) : 0;
-                const musicSystemData: CrewMusicSystemYData = this.musicSystemData[bar.parentMusicSystem.Id];
 
                 const lastPosition: CrewPosition = {
-                    endY: musicSystemData.endY,
+                    endY: -1,
                     index: this.positions.length,
                     measureIndex: i,
                     notes: [],
-                    pageIndex: musicSystemData.pageIndex,
+                    pageIndex: -1,
                     startX: Infinity,
-                    startY: musicSystemData.startY,
-                    systemIndex: musicSystemData.index,
+                    startY: Infinity,
+                    systemIndex: -1,
                     time: time,
                     width: Infinity,
                 };
                 this.positions.push(lastPosition);
 
+                // if stave is not rendered, then we can not have graphical data (pageIndex, xy coords etc)
+                if (!!bar.parentMusicSystem) {
+                    const musicSystemData: CrewMusicSystemYData = this.musicSystemData[bar.parentMusicSystem.Id];
+                    lastPosition.startY = musicSystemData.startY;
+                    lastPosition.endY = musicSystemData.endY;
+                    lastPosition.pageIndex = musicSystemData.pageIndex;
+                    lastPosition.systemIndex = musicSystemData.index;
+                }
+
                 for (let u: number = 0; u < staffEntry.graphicalVoiceEntries.length; ++u) {
                     const notes: GraphicalNote[] = staffEntry.graphicalVoiceEntries[u].notes;
                     for (let v: number = 0; v < notes.length; ++v) {
-                        const note: GraphicalNote = notes[v];
-                        if (!(note instanceof VexFlowGraphicalNote)) {
-                            continue;
-                        }
-
-                        const vfNote: Vex.Flow.StaveNote = (<VexFlowGraphicalNote>notes[v]).vfnote[0]; // vfnote is tuple
-                        const noteHeads: SVGGraphicsElement[] = this.getNoteNoteHeads(vfNote);
-                        const sourceNote: Note = note.sourceNote;
-                        // update start x position and width
-                        for (let nh: number = 0; nh < noteHeads.length; ++nh) {
-                            const tbb: any = noteHeads[nh].getBBox();
-                            if (lastPosition.startX > tbb.x) {
-                                lastPosition.startX = tbb.x;
-                                lastPosition.width = tbb.width;
-                            }
-                        }
+                        const graphicalNote: GraphicalNote = notes[v];
+                        const sourceNote: Note = graphicalNote.sourceNote;
 
                         lastPosition.notes.push({
                             barIndex: i,
@@ -122,8 +116,21 @@ export class CrewStaveMeasureData {
                             midiNote: sourceNote.isRest() ? -1 : sourceNote.Pitch.getHalfTone(),
                             staveIndex: this.staveIndex,
                             time: lastPosition.time,
-                            vfNote: vfNote,
+                            vfNote: undefined,
                         });
+
+                        if (lastPosition.systemIndex !== -1 && (graphicalNote instanceof VexFlowGraphicalNote)) {
+                            const vfNote: Vex.Flow.StaveNote = (<VexFlowGraphicalNote>graphicalNote).vfnote[0]; // vfnote is tuple
+                            const noteHeads: SVGGraphicsElement[] = this.getNoteNoteHeads(vfNote);
+                            // update start x position and width
+                            for (let nh: number = 0; nh < noteHeads.length; ++nh) {
+                                const tbb: any = noteHeads[nh].getBBox();
+                                if (lastPosition.startX > tbb.x) {
+                                    lastPosition.startX = tbb.x;
+                                    lastPosition.width = tbb.width;
+                                }
+                            }
+                        }
                     }
                 }
             }
