@@ -92,7 +92,6 @@ export class CrewStaveMeasureData {
                     time: time,
                     width: Infinity,
                 };
-                this.positions.push(lastPosition);
 
                 // if stave is not rendered, then we can not have graphical data (pageIndex, xy coords etc)
                 if (!!bar.parentMusicSystem) {
@@ -103,12 +102,19 @@ export class CrewStaveMeasureData {
                     lastPosition.systemIndex = musicSystemData.index;
                 }
 
+                let positionHasVisibleNotes: boolean = false;
                 for (let u: number = 0; u < staffEntry.graphicalVoiceEntries.length; ++u) {
                     const notes: GraphicalNote[] = staffEntry.graphicalVoiceEntries[u].notes;
                     for (let v: number = 0; v < notes.length; ++v) {
                         const graphicalNote: GraphicalNote = notes[v];
                         const sourceNote: Note = graphicalNote.sourceNote;
-
+                        if (!sourceNote.PrintObject) {
+                            continue;
+                        }
+                        if (!positionHasVisibleNotes) {
+                            positionHasVisibleNotes = true;
+                            this.positions.push(lastPosition);
+                        }
                         lastPosition.notes.push({
                             barIndex: i,
                             beatIndex: beatIndex,
